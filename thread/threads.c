@@ -8,6 +8,10 @@
 #include "ec440threads.h"
 #include "threads.h"
 
+/* 
+	Ryan Sullivan
+	U73687595
+*/
 
 /* global variables */
 nthread *currThread = NULL;		// keeps track of currently executing thread
@@ -31,8 +35,8 @@ int pthread_create(pthread_t *thread,const pthread_attr_t *attr, void *(*start_r
     newThread -> stack_ptr = malloc(STACKMEM);
 
 	// set spot in memory for pthread_exit
-    unsigned long int *exit = (unsigned long int *) newThread -> stack_ptr + (STACKMEM/sizeof(unsigned long int) - 1);	// place pthread_exit on the top of the stack for newThread
-    *exit = (unsigned long int)pthread_exit;
+    unsigned long int *exit = (unsigned long int *) newThread -> stack_ptr + (STACKMEM/sizeof(unsigned long int) - 1);	// point to top of stack
+    *exit = (unsigned long int)pthread_exit;	// place pthread_exit at the top of the stack
 
 	// initialize newThread
     newThread -> state = 0;
@@ -52,6 +56,7 @@ int pthread_create(pthread_t *thread,const pthread_attr_t *attr, void *(*start_r
 	
 	// place start_thunk on the PC to run after longjmp
     newThread -> buf[0].__jmpbuf[JB_PC] = ptr_mangle((unsigned long int)start_thunk);
+	// set the exit function as the return stack ptr
     newThread -> buf[0].__jmpbuf[JB_RSP] = ptr_mangle((unsigned long int)exit);
 
 	// increment numThreads and thread_id
@@ -62,7 +67,6 @@ int pthread_create(pthread_t *thread,const pthread_attr_t *attr, void *(*start_r
 
 /* exit current thread and free stack */
 void pthread_exit(void *value_ptr){
-	//printf("Exiting thread\n");
 	currThread -> state = 2;
 	currThread -> last -> next = currThread -> next;
 	currThread -> next -> last =  currThread -> last;
@@ -83,7 +87,6 @@ pthread_t pthread_self(){
 
 /* initialize the timer interrupt and initial thread */
 int init(){
-	//printf("Initializing...\n");
 	nthread *initThread = malloc(sizeof(nthread));
 	initThread -> id = (pthread_t)thread_id;
 	initThread -> last = initThread;
@@ -105,7 +108,6 @@ int init(){
 /* pause current thread and jump to next thread */
 void schedule(){
 	/* check to see if uninitialized */
-	//printf("Thread scheduled\n");
 	if(currThread == NULL){
 		return;
 	}

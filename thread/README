@@ -1,0 +1,37 @@
+Ryan Sullivan
+U73687595
+
+In this project we were tasked with creating the basis for a program threading system,
+having to implement pthread_create, pthread_exit, pthread_self and a round-robin scheduling
+system. 
+
+First, I created the thread control block (TCB) which stored the jmp_buf registers, the stack
+memory, the thread id, the thread state, and pointers to the next and previous threads. I decided
+to make the threading system use a circularly linked list, as it was the easiest to use given
+the round-robin scheduling requirement. I then set up some simple global variables: currThread,
+numThreads, and thread_id. These each kept track of the currently executing thread, the current
+number of active threads and the next thread_id to be assigned, respectively.
+
+Secondly, I got pthread_self out of the way, as it was just returning the id of the current thread 
+or a blank thread_id if there were no active threads.
+
+Then I began pthread_exit, as it was just removing the tcb from the cricularly linked list and then
+freeing the memory assigned to its stack then scehduling the next thread to run.
+
+Then I worked on pthread_create, which at first was quite manageable, with most of it being basic
+memory allocation and initializing struct variables for the tcb. The main issue was with the 
+writing to r12 and r13 and also making sure pthread_exit was automatically called. I reviewed ASM 
+to make sure I was correct in how to assign register values to r12 and r13 then moved to pthread_exit.
+At first I thought that if I just placed pthread_exit in the RSP register then it would 
+automatically jump tothe exit function on the return of the program, I found I was half right. 
+What I forgot to do wasplace pthread_exit at the top of my stack to ensure that on the program 
+jumping to the rsp it would not jump to an invalid memory address. Once I did that the main 
+issue was then scheduling.
+
+Finally, I created the scheduling and initializing functions to handle the inital pthread_create use
+and thread context switching. For the init function I just created a new tcb node, allocated no stack
+space and then made sure its next and last pointers were to itself to initialize the circularly linked
+list. Then, init assigns the scheduler to the SIGALRM signal as its handler and initializes the alarm.
+The schedule function sets the currently running thread to paused, if not exited, then saves the
+current registers into its jmp_buf, then switches to the next thread and longjmp 's to its 
+context.
