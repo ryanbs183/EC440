@@ -1,3 +1,3 @@
-# EC440
-## Operating Systems Projects
-1) Simple Shell
+### Operating Systems Projects
+1) shell
+2) threading system
