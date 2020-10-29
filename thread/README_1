@@ -1,0 +1,26 @@
+Ryan Sullivan
+U73687595
+
+In this project we were tasked with improving our previously implemented threading library,
+adding implementations for pthread_join, lock and unlock, and adding in semaphore implementation.
+
+Lock and unlock were implemented by blocking and unblocking the SIGALRM signal from the ualarm call
+in init using sigprocmask, SIG_BLOCK and SIG_UNBLOCK. Using lock and unlock I was able to improve my
+previously implemented functions like pthread_create and pthread_exit, as well as helper functions such
+as schedule by preventing any scheduler interrupts during the key points in the function calls. 
+
+I implemented pthread_join by first setting the calling thread's state to BLOCKED (added for this case)
+and then scheduling the other threads. When the scheduler eventually looped around back to the BLOCKED 
+thread, it would check to see whether its targeted thread had exited, and if so it would resume the 
+BLOCKED thread and set value_ptr to the target thread's return value, retrieved from the $rax register
+using the pthread_exit_wrapper, which was placed atop the stack in place of pthread_exit to allow for
+recording return values.
+
+For the semaphore implementation we were tasked with implementing the sem_init, sem_wait, sem_post and 
+sem_destroy functions. The function sem_init initialized the semaphore values like its thread queue and 
+initial value, as well as made sure the passed semaphore had a reference to our created structure through
+its __align property. Then sem_wait and sem_post were in charge of decrementing and incrementing the semaphore's 
+value respectively. On sem_wait, if the value was equal to zero it would pause the calling thread and call 
+the schedule function and then decrement the value, otherwise it would just decrement the semaphore value. On the other hand
+sem_post, if called it will dequeue the currThread and READY it, then the next thread is queued and the 
+value is incremented. Finally, sem_destroy cleans up all of the memory taken up by the passed semaphore.
