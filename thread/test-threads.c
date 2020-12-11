@@ -28,11 +28,9 @@ int main(int argc, char **argv) {
 	}
 
     //join all threads ... not important for proj2
-	//for(i = 0; i<THREAD_CNT; i++) {
-	//	pthread_join(threads[i], NULL);
-	//}
+	pthread_join(threads[1], NULL);
     // But we have to make sure that main does not return before 
     // the threads are done... so count some more...
-    count((void *)(cnt*(THREAD_CNT + 1)));
+    //count((void *)(cnt*(THREAD_CNT + 1)));
     return 0;
 }
