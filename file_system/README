@@ -1,0 +1,73 @@
+Ryan Sullivan
+U73687595
+
+In project5 we were tasked with creating a simple file system atop a virtual disk (represented as a file itself).
+We had to implement functions to create, mount and unmount our file system, and functions to create, delete and modify files
+within that file system.
+
+int make_fs(char *disk_name): I preallocate space for my FAT, DIR, and super block variables, then go and write them to the first blocks available 
+on the disk, the data_idx, the place where all files can actually be saved, begins after this. In these data slots, I use a 
+buffer of BLOCK_SIZE to set the entire data space to 0, cleaning it for later writes.
+
+int mount_fs(char *disk_name): I read from the first block of the disk, where I store my file system super block and then usnig the preallocated 
+values stored in it: fat_idx, fat_len, dir_idx, dir_len, I read through those blocks to initialize my FAT and DIR variables.
+
+int umount_fs(char *disk_name): I do the same as in the end of my make_fs function and write my file system variables: fs, FAT, and DIR to initial
+blocks in the disk, using the precomputed values obtained from mount_fs.
+
+int fs_open(char *name): In this function I first check to see whether or not my file descriptor array, file_des, has been initalized and if 
+not I used init_file_des() to initialize the array. Then, using the name I search through my DIR array for the file name, if the file does 
+not exist then I return a -1. After finding the file I then search for a free file descriptor in file_des, if there is not any file descriptors
+free then I return -1. If a file descriptor is found I store it in fildes_idx and then I set file_des[fildes_idx] to used, set its file to that
+of the dir_entry I found in DIR, set the offset to 0 and then I make sure to increment the reference count in the dir_entry I found in DIR.
+
+int fs_close(int fildes): In this function I first check to see if fildes is a valid file descriptor and if it is in use, if not I return -1.
+Otherwise, I find the dir_entry it corresponds to, I decrement its reference count and then I set file_des[fildes] to an empty file descriptor.
+
+int fs_create(char *name): First it checks to make sure that the name is valid, in that it is not empty nor is it too long, if it is invalud it 
+returns -1. Otherwise, the function goes through all of DIR, first it checks to see whether there is a free slot in DIR for a new file, also
+if the name is found to be already in use the function returns a -1. Then, the function sets the free slot in DIR it found to used, sets its 
+name to name and sets its head to any free FAT block that can be found. It finally sets the assigned FAT position to END_FILE to signnify it 
+is in use and returns 0.
+
+int fs_delete(char *name): First it checks to see that the name is currently in the DIR, if not return -1, otherwise check to see if there are
+currently any file descriptors referencing this DIR entry, if so then also return -1. Then the function goes through the FAT and sees what blocks
+the file is using, going through and wiping those blocks and setting them to FREE in the FAT. Then the function takes the DIR entry and sets its
+used to 0, wipes its name, resets its size and sets the head to -1, wiping it from the DIR and returning 0.
+
+int fs_read(int fildes, void *buf, size_t nbyte): First, the function checks to see fildes is valid and that the DIR entry exists for fildes, if not
+the the function returns -1. Then, the file moves the start of the read to the necessary block, then the function, before reading bytes, at the start
+of each loop, that it is not at the end of the block. If it is at the end of the block then the current_fat_idx is moved to the next block pointed to
+in the FAT entry, but if it is the end of the file then the loop is broken and r_bytes is returned. Then the block pointed to by current_fat_idx
+is read into the r_buf, after which the function checks to see how much farther it can read, either to the end of the block, the end of the size of buf, 
+or the end of the block. Then those amount of bytes are appended to the buf passed, also the offset of the file is incremented the number of bytes read. 
+The amount of bytes read in that loop is added to r_bytes and if it is greater than or equal to nbyte then r_bytes is returned.
+
+int fs_write(int fildes, void *buf, size_t nbyte): First the function checks to seee that the file descriptor passed is valid, if not it returns -1. Then
+the function finds the DIR entry corresponding to fildes after which, the function sets the current_fat_idx to the block corresponding to the offset of the
+file. Then, when the function goes to write, it first checks to see if it is at the end of the file, if so it finds a new FAT block for it to write into 
+and sets that to its new END_FILE and has the FAT entry of the current block point to this newly allocated block. The function then checks to see how much
+it can write in this loop, either to the end of the block, to the max number of input bytes, or to the maximum file size. The number of bytes are then copied
+to the wr_buf and then it is written to the current block and offset annd wr_bytes are incremented that number of bytes, if the offset is greater than the size
+of the file then the size is then set to the offset. Finally, if the copied bytes is then equal to nbyte, then wr_bytes is returned.
+
+int fs_get_filesize(int fildes): First the function checks to see that the fildes is valid and that the file descriptor is in use, if not then -1 is returned.
+Then, the corresponding DIR entry is found and its size is returned.
+
+int fs_listfiles(char ***files): First, the list of files is allocated to the MAX_FILES. Then, the function goes through the entire DIR, checks if the current
+entry is in use, and if so, its name is copied into the list. The entry after the final file is set to NULL and then the file pointer is then pointed at the 
+newly finished list.
+
+int fs_lseek(int fildes, off_t offset): First the function finds the corresponding DIR entry to fildes, then it checks to see that fildes is a valid file 
+descriptor, then that the file descriptor is in use, and finally that offset is not greater than the file size. If any of those conditions are not met
+then -1 is returned. Otherwise, the function goes to file_des[fildes] and sets its offset to the offset passed.
+
+int fs_truncate(int fildes, off_t length): First the function finds the corresponding DIR entry to fildes, then it checks to see that fildes is a valid file 
+descriptor, then that the file descriptor is in use, and finally that length is not greater than the file size. If any of those conditions are not met
+then -1 is returned. Otherwise, the FAT is traversed, and any block that is over the size of the length provided is set to FREE. Then, the DIR entry's size
+is set to length and then file_des is traversed to see if any file descriptor is pointing to the file, and if so its offset is reduced to length.
+
+DIFFICULTIES: For much of this project I had issues with heap corruption as I kept on memset-ing or memcpy-ing outside of the allocated bounds of my ponters.
+The fix was simply to go back and double and triple check each and every statement to do with memory. On another note, I also had issues throughout with
+SEG_FAULTs as I try to access outside of my allocated spaces especially in fs_read and fs_write. Also, I could never quite figure out how to fit in the full
+32 MB, as I thought I had used the minimal number of blocks to store my data structures.

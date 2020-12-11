@@ -1,0 +1,32 @@
+Ryan Sullivan
+U73687595
+
+In this project we were tasked with creating a TLS (Thread Local Storage) library to
+interact with either our previously implemented threading library or with the provided
+<pthread.h> library. To accomplish this goal we had to implement the tls_read, tls_write,
+tls_create, tls_clone and tls_destroy functions.
+
+Initially I tackled the tls_create and tls_clone functions, as they were similar in 
+implementation and were integral to being able to test the later functions. Generally
+the implementation was relatively simple, as they were both mainly allocation functions.
+Both functions allocate memory for new tls structures, their pages, and a hash structure
+to store the tls data in the hash table. The main point of difference is that the tls_clone
+function creates new tls and hash structure but the pages in the tls instead point to a 
+target thread id's TLS.
+
+Second, I, using the slides, implemented tls_read and tls_write, as both were similar in
+structure. For tls_writefirst an input buffer along with an offset and length must be input 
+then using this the functionnavigates to that offset in the memory and writes "length" 
+number of bytes into the page(s). In the event of a page being shared between two threads a
+copy is made and the new data is written into the copy, which takes the place of the previously
+shared page in the thread's tls that called the tls_write. For tls_read, all that had to be done
+was to navigate to the offset within the tls's pages and read into the buffer a byte array of 
+length "length". The main issue I had was implementing the Copy on Write (CoW) functionality, 
+and getting the tls_read to work, as initially I kept getting a mem_unaligned error.
+
+Finally, I implemented tls_destroy, which for mainly went through the calling thread's 
+corresponding tls and freed all of the memory locations storing the hash and tls structures.
+However, prior to freeing the page structures I had to unmap all of the pages stored in
+the structure by unmapping memory of page_size at all the pages[i] -> addr. This was true
+unless the page was referenced by another thread, in which case the page's ref_count was
+decremented and the page memory remained mapped.

@@ -1,0 +1,30 @@
+## Ryan Sullivan
+### U73687595
+
+In this project we were tasked with creating a shell for a Debian Linux distribution. 
+To execute such, I created an infinite while loop, only able to be interrupted if 
+read(STDIN) returned 0 (indicating a Ctrl-D input). Within the loop I executed the 
+run command, which is where most of the actual processing occurs. The run command
+parses the input command string first by removing any special characters, '&' '>' '<' 
+if present and extract the input and output files as necessary. Then the input is
+parsed, split by the '|' character, and the amount of piped commands is recorded. 
+If an input file is detected then the initial command has its input set to such. 
+The program then loops through the piped commands, parses them, and executes them.
+Also, depending on their place in the order a pipe is opened. If the command is in
+the middle it sets its input as the read end of the pipe and its output as the write
+end of the pipe. When the program gets to the final command it will check for the
+presence of an outfile parameter; If the outfile is present it will open it 
+(create the file with r/w permissions for all if necessary) and set the output to 
+such. Otherwise STDOUT is set as the process output and the command is executed and
+the loop exited. Then, if '&' was not detected at the beginning of run, the parent
+will wait for its child processes to finish, otherwise it will exit and loop back
+to accepting input in the main loop. The main issue I had with this was setting up
+the pipes correctly, as I thought I had to check if the current fork was the parent
+first rather than it being up to the programmer. Once I figured that out it was just
+a matter of parsing the string correctly. Another issue I had was that I accidentally
+deleted my entire project just 2 days prior to the submission deadline. While I did 
+have a backup, it was outdated. This less complex version of my code, though allowed
+me to restructure and delete a load of garbage code, ending up with a much better 
+structured final project. Overall, this experience has been extremely useful in
+expanding my understanding of operating systems, and I hope to continue improving
+this program even after submission.

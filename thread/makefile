@@ -3,9 +3,7 @@ threads: threads.c
 
 test:
 	gcc test-threads.c threads.o -g -Wall -o test
-	gcc sema_test.c threads.o -g -Wall -o test_sem
 
 clean:
 	rm threads.o
 	rm test
-	rm test_sem
